@@ -42,7 +42,7 @@ export default function App() {
   const [amountInput, setAmountInput] = useState('');
   const [notice, setNotice] = useState({ text: '', isError: false });
 
-  const isOwner = currentUser === '1';
+  const isOwner = currentUser === 'Admin';
 
   // Initial Load
   useEffect(() => {
