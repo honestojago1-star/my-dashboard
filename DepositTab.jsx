@@ -1,27 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 export default function DepositTab({ currentUser }) {
-  const [selectedCrypto, setSelectedCrypto] = useState('BTC');
-  const [copied, setCopied] = useState(false);
-
-  const walletAddresses = {
-    BTC: `bc1q${currentUser?.toLowerCase() || 'user'}x90a82348n7392817349182374`,
-    ETH: `0x71C${currentUser?.toUpperCase() || 'USER'}8392019283746501293847561`,
-    USDT: `0x71C${currentUser?.toUpperCase() || 'USER'}8392019283746501293847561`
-  };
-
-  const currentAddress = walletAddresses[selectedCrypto] || walletAddresses.BTC;
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(currentAddress);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   return (
     <div style={{ maxWidth: '600px', width: '100%', boxSizing: 'border-box', position: 'relative' }}>
       
-      {/* MAINTENANCE OVERLAY */}
+      {/* OVERLAY WITH CAUTION TAPE & X */}
       <div style={{
         position: 'absolute',
         top: 0,
@@ -38,10 +21,11 @@ export default function DepositTab({ currentUser }) {
         padding: '24px',
         boxSizing: 'border-box',
         borderRadius: '4px',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        minHeight: '340px'
       }}>
         
-        {/* TOP CAUTION TAPE BANNER */}
+        {/* TOP CAUTION TAPE */}
         <div style={{
           position: 'absolute',
           top: '24px',
@@ -64,8 +48,8 @@ export default function DepositTab({ currentUser }) {
 
         {/* RED X ICON */}
         <div style={{
-          width: '64px',
-          height: '64px',
+          width: '56px',
+          height: '56px',
           borderRadius: '50%',
           backgroundColor: 'rgba(239, 68, 68, 0.15)',
           border: '2px solid #ef4444',
@@ -73,9 +57,9 @@ export default function DepositTab({ currentUser }) {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          fontSize: '32px',
+          fontSize: '28px',
           fontWeight: 'bold',
-          marginBottom: '16px',
+          marginBottom: '14px',
           boxShadow: '0 0 20px rgba(239, 68, 68, 0.3)'
         }}>
           ✕
@@ -99,7 +83,7 @@ export default function DepositTab({ currentUser }) {
           on Telegram.
         </p>
 
-        {/* TELEGRAM BUTTON */}
+        {/* TELEGRAM LINK BUTTON */}
         <a
           href="https://t.me/jeremyhoffer"
           target="_blank"
@@ -112,16 +96,13 @@ export default function DepositTab({ currentUser }) {
             fontWeight: 'bold',
             textDecoration: 'none',
             borderRadius: '2px',
-            fontFamily: 'inherit',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px'
+            fontFamily: 'inherit'
           }}
         >
           Message @jeremyhoffer →
         </a>
 
-        {/* BOTTOM CAUTION TAPE BANNER */}
+        {/* BOTTOM CAUTION TAPE */}
         <div style={{
           position: 'absolute',
           bottom: '24px',
@@ -145,23 +126,11 @@ export default function DepositTab({ currentUser }) {
       </div>
 
       {/* INACTIVE BACKGROUND CARD */}
-      <div style={{
-        backgroundColor: '#141416',
-        border: '1px solid #27272a',
-        padding: '24px',
-        borderRadius: '4px',
-        opacity: 0.25,
-        pointerEvents: 'none',
-        minHeight: '320px'
-      }}>
-        <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#ffffff', marginTop: 0, marginBottom: '8px' }}>
-          Deposit Funds
-        </h2>
+      <div style={{ backgroundColor: '#141416', border: '1px solid #27272a', padding: '24px', borderRadius: '4px', opacity: 0.25, pointerEvents: 'none', minHeight: '340px' }}>
+        <h2 style={{ fontSize: '16px', color: '#ffffff', marginTop: 0 }}>Deposit Funds</h2>
         <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
-          {['BTC', 'ETH', 'USDT'].map((asset) => (
-            <button key={asset} style={{ flex: 1, padding: '10px', backgroundColor: '#0c0c0e', border: '1px solid #27272a', color: '#a1a1aa' }}>
-              {asset}
-            </button>
+          {['BTC', 'ETH', 'USDT'].map((a) => (
+            <button key={a} style={{ flex: 1, padding: '10px', backgroundColor: '#0c0c0e', border: '1px solid #27272a', color: '#a1a1aa' }}>{a}</button>
           ))}
         </div>
       </div>

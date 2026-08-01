@@ -1,5 +1,16 @@
 import React from 'react';
-import { Wallet, ShoppingBag, Trophy, Send, Crown, MessageSquare, CreditCard, FileText, DollarSign, ShieldAlert } from 'lucide-react';
+import { 
+  Wallet, 
+  ShoppingBag, 
+  Trophy, 
+  Send, 
+  Crown, 
+  MessageSquare, 
+  CreditCard, 
+  FileText, 
+  DollarSign, 
+  ShieldAlert 
+} from 'lucide-react';
 
 export default function Sidebar({ activeItem, setActiveItem, isOwner }) {
   const menuData = [
@@ -43,14 +54,15 @@ export default function Sidebar({ activeItem, setActiveItem, isOwner }) {
   return (
     <aside style={{
       width: '240px',
-      height: '100vh',
+      minHeight: '100vh',
       backgroundColor: '#0a0a0c',
       color: '#8e95a5',
       padding: '16px',
       borderRight: '1px solid #1a1d24',
       display: 'flex',
       flexDirection: 'column',
-      boxSizing: 'border-box'
+      boxSizing: 'border-box',
+      flexShrink: 0
     }}>
       <div style={{ overflowY: 'auto', flex: 1 }}>
         {menuData.map((group, groupIdx) => (
@@ -62,7 +74,8 @@ export default function Sidebar({ activeItem, setActiveItem, isOwner }) {
               color: '#4a505e',
               textTransform: 'uppercase',
               marginBottom: '8px',
-              paddingLeft: '8px'
+              paddingLeft: '8px',
+              margin: '0 0 8px 0'
             }}>
               {group.category}
             </h3>
@@ -70,9 +83,11 @@ export default function Sidebar({ activeItem, setActiveItem, isOwner }) {
               {group.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeItem === item.id;
+                
                 return (
                   <li key={item.id} style={{ marginBottom: '4px' }}>
                     <button
+                      type="button"
                       onClick={() => setActiveItem(item.id)}
                       style={{
                         width: '100%',
@@ -83,13 +98,19 @@ export default function Sidebar({ activeItem, setActiveItem, isOwner }) {
                         backgroundColor: isActive ? '#1a1d24' : 'transparent',
                         color: isActive ? '#ffffff' : (item.goldText ? '#fbbf24' : '#8e95a5'),
                         border: 'none',
+                        borderRadius: '4px',
                         cursor: 'pointer',
                         textAlign: 'left',
                         fontFamily: 'inherit',
                         fontSize: '12px'
                       }}
                     >
-                      <Icon size={14} color={isActive || item.goldIcon || item.goldText ? '#fbbf24' : '#8e95a5'} />
+                      {Icon && (
+                        <Icon 
+                          size={14} 
+                          color={isActive || item.goldIcon || item.goldText ? '#fbbf24' : '#8e95a5'} 
+                        />
+                      )}
                       <span>{item.label}</span>
                     </button>
                   </li>

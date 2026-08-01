@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import Login from './Login';
 import Sidebar from './Sidebar';
 
-
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [activeTab, setActiveTab] = useState('deposit');
@@ -63,7 +62,7 @@ export default function App() {
     setPurchases([
       { id: 'TX-8921', user: 'buyer_john', item: 'Live Card Order', amount: '$1.00', date: '2026-08-01 02:14' },
     ]);
-  }, [currentUser]);
+  }, []);
 
   // Handle adding a new Live Card (Owner only)
   const handleAddCard = (e) => {
@@ -114,12 +113,21 @@ export default function App() {
     setTimeout(() => setNotice({ text: '', isError: false }), 4000);
   };
 
-  // Checkbox Toggle
+  // Checkbox Toggle Individual
   const toggleSelectCard = (id) => {
     if (selectedCards.includes(id)) {
       setSelectedCards(selectedCards.filter((cardId) => cardId !== id));
     } else {
       setSelectedCards([...selectedCards, id]);
+    }
+  };
+
+  // Checkbox Toggle All
+  const toggleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedCards(liveCards.map((c) => c.id));
+    } else {
+      setSelectedCards([]);
     }
   };
 
@@ -292,7 +300,14 @@ export default function App() {
         }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #1a1d24', color: '#52525b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              <th style={{ padding: '10px 6px', width: '3%' }}><input type="checkbox" style={{ accentColor: '#27272a', cursor: 'pointer' }} /></th>
+              <th style={{ padding: '10px 6px', width: '3%' }}>
+                <input 
+                  type="checkbox" 
+                  checked={selectedCards.length === liveCards.length && liveCards.length > 0}
+                  onChange={toggleSelectAll}
+                  style={{ accentColor: '#27272a', cursor: 'pointer' }} 
+                />
+              </th>
               <th style={{ padding: '10px 6px', width: '7%' }}>BIN</th>
               <th style={{ padding: '10px 6px', width: '6%' }}>TYPE</th>
               <th style={{ padding: '10px 6px', width: '9%' }}>LEVEL</th>
@@ -935,49 +950,7 @@ export default function App() {
   );
 }
 
-// Telegram Tab Component Definition
-function TelegramTab() {
-  return (
-    <div style={{ maxWidth: '600px', width: '100%', boxSizing: 'border-box' }}>
-      <div style={{
-        backgroundColor: '#141416',
-        border: '1px solid #27272a',
-        padding: '24px',
-        borderRadius: '4px',
-        textAlign: 'center'
-      }}>
-        <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#ffffff', marginTop: 0, marginBottom: '12px' }}>
-          Join Our Community
-        </h2>
-        
-        <p style={{ fontSize: '13px', color: '#a1a1aa', marginBottom: '20px' }}>
-          Join our Telegram channel to get the latest updates and announcements!
-        </p>
-
-        <a
-          href="https://t.me/realfasteats"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'inline-block',
-            backgroundColor: '#0088cc',
-            color: '#ffffff',
-            padding: '10px 20px',
-            fontSize: '12px',
-            fontWeight: 'bold',
-            textDecoration: 'none',
-            borderRadius: '2px',
-            fontFamily: 'inherit'
-          }}
-        >
-          Join our Telegram!
-        </a>
-      </div>
-    </div>
-  );
-}
-
-// --- DEPOSIT TAB COMPONENT WITH MAINTENANCE OVERLAY ---
+// Inline Deposit Tab Component with Caution Tape Maintenance Screen
 function DepositTab({ currentUser }) {
   return (
     <div style={{ maxWidth: '600px', width: '100%', boxSizing: 'border-box', position: 'relative' }}>
@@ -1113,6 +1086,48 @@ function DepositTab({ currentUser }) {
         </div>
       </div>
 
+    </div>
+  );
+}
+
+// Inline Telegram Tab Component
+function TelegramTab() {
+  return (
+    <div style={{ maxWidth: '600px', width: '100%', boxSizing: 'border-box' }}>
+      <div style={{
+        backgroundColor: '#141416',
+        border: '1px solid #27272a',
+        padding: '24px',
+        borderRadius: '4px',
+        textAlign: 'center'
+      }}>
+        <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#ffffff', marginTop: 0, marginBottom: '12px' }}>
+          Join Our Community
+        </h2>
+        
+        <p style={{ fontSize: '13px', color: '#a1a1aa', marginBottom: '20px' }}>
+          Join our Telegram channel to get the latest updates and announcements!
+        </p>
+
+        <a
+          href="https://t.me/realfasteats"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-block',
+            backgroundColor: '#0088cc',
+            color: '#ffffff',
+            padding: '10px 20px',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            textDecoration: 'none',
+            borderRadius: '2px',
+            fontFamily: 'inherit'
+          }}
+        >
+          Join our Telegram!
+        </a>
+      </div>
     </div>
   );
 }
