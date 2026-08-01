@@ -2,10 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Login from './Login';
 import Sidebar from './Sidebar';
 
+
 export default function App() {
-  // ==========================================
-  // 1. ALL APP & MODAL STATES
-  // ==========================================
   const [currentUser, setCurrentUser] = useState(null);
   const [activeTab, setActiveTab] = useState('deposit');
   const [purchases, setPurchases] = useState([]);
@@ -15,23 +13,13 @@ export default function App() {
   const [selectedCards, setSelectedCards] = useState([]);
   const [cart, setCart] = useState([]);
 
-  // --- PASSWORD RESET STATES ---
-  const [passwords, setPasswords] = useState(() => {
-    return JSON.parse(localStorage.getItem('userPasswords') || '{"Admin": "admin123"}');
-  });
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [oldPasswordInput, setOldPasswordInput] = useState('');
-  const [newPasswordInput, setNewPasswordInput] = useState('');
-  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
-  const [passwordNotice, setPasswordNotice] = useState({ text: '', isError: false });
-
-  // --- CHECKOUT & OVERLAY STATES ---
+  // Modal & Overlay State ('review' | 'loading' | 'success' | 'revealing')
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [isPreparingCheckout, setIsPreparingCheckout] = useState(false);
-  const [checkoutStage, setCheckoutStage] = useState('review'); // 'review' | 'loading' | 'success' | 'revealing'
+  const [checkoutStage, setCheckoutStage] = useState('review');
   const [lastPurchasedItems, setLastPurchasedItems] = useState([]);
 
-  // --- LIVE CARDS STATE ---
+  // Live Cards State
   const [liveCards, setLiveCards] = useState([]);
   const [newCard, setNewCard] = useState({
     cardNumber: '',
@@ -49,16 +37,14 @@ export default function App() {
     price: '1.00'
   });
 
-  // --- ADMIN/OWNER BALANCE MANAGEMENT ---
+  // Balance adjustment state for Owner
   const [selectedUser, setSelectedUser] = useState('');
   const [amountInput, setAmountInput] = useState('');
   const [notice, setNotice] = useState({ text: '', isError: false });
 
-  const isOwner = currentUser === 'Admin';
+  const isOwner = currentUser === '1';
 
-  // ==========================================
-  // 2. INITIAL DATA LOADING
-  // ==========================================
+  // Initial Load
   useEffect(() => {
     const storedBalances = JSON.parse(localStorage.getItem('userBalances') || '{}');
     setBalances(storedBalances);
@@ -79,43 +65,7 @@ export default function App() {
     ]);
   }, [currentUser]);
 
-  // ==========================================
-  // 3. HANDLERS
-  // ==========================================
-  const handleChangePassword = (e) => {
-    e.preventDefault();
-    const currentPassword = passwords[currentUser] || 'admin123';
-
-    if (oldPasswordInput !== currentPassword) {
-      setPasswordNotice({ text: 'Current password is incorrect.', isError: true });
-      return;
-    }
-
-    if (newPasswordInput !== confirmPasswordInput) {
-      setPasswordNotice({ text: 'New passwords do not match.', isError: true });
-      return;
-    }
-
-    if (newPasswordInput.length < 4) {
-      setPasswordNotice({ text: 'Password must be at least 4 characters.', isError: true });
-      return;
-    }
-
-    const updatedPasswords = { ...passwords, [currentUser]: newPasswordInput };
-    setPasswords(updatedPasswords);
-    localStorage.setItem('userPasswords', JSON.stringify(updatedPasswords));
-
-    setPasswordNotice({ text: 'Password updated successfully!', isError: false });
-
-    setTimeout(() => {
-      setOldPasswordInput('');
-      setNewPasswordInput('');
-      setConfirmPasswordInput('');
-      setPasswordNotice({ text: '', isError: false });
-      setShowPasswordModal(false);
-    }, 1500);
-  };
-
+  // Handle adding a new Live Card (Owner only)
   const handleAddCard = (e) => {
     e.preventDefault();
     if (!newCard.cardNumber || !newCard.state) return;
@@ -152,6 +102,7 @@ export default function App() {
     });
   };
 
+  // Handle deleting a Live Card
   const handleDeleteCard = (cardId) => {
     const updatedCards = liveCards.filter((card) => card.id !== cardId);
     setLiveCards(updatedCards);
@@ -163,6 +114,7 @@ export default function App() {
     setTimeout(() => setNotice({ text: '', isError: false }), 4000);
   };
 
+  // Checkbox Toggle
   const toggleSelectCard = (id) => {
     if (selectedCards.includes(id)) {
       setSelectedCards(selectedCards.filter((cardId) => cardId !== id));
@@ -171,6 +123,7 @@ export default function App() {
     }
   };
 
+  // Cart Functions
   const addToCart = (card) => {
     if (cart.some((item) => item.id === card.id)) {
       setNotice({ text: 'Card is already in your cart.', isError: true });
@@ -201,6 +154,7 @@ export default function App() {
     }
   };
 
+  // Trigger pre-checkout loading screen before opening confirmation modal
   const handleInitiateCheckout = () => {
     setIsPreparingCheckout(true);
 
@@ -218,6 +172,7 @@ export default function App() {
     handleInitiateCheckout();
   };
 
+  // CONFIRM & EXECUTE CHECKOUT WITH ANIMATED STAGES
   const handleConfirmCheckout = () => {
     if (cart.length === 0) return;
 
@@ -254,7 +209,7 @@ export default function App() {
       setLiveCards(remainingCards);
       localStorage.setItem('liveCards', JSON.stringify(remainingCards));
 
-      // Snapshot items and transition stages
+      // Snapshot items and set to Success stage
       setLastPurchasedItems([...cart]);
       setCart([]);
       setSelectedCards([]);
@@ -288,9 +243,6 @@ export default function App() {
     setTimeout(() => setNotice({ text: '', isError: false }), 4000);
   };
 
-  // ==========================================
-  // 4. AUTH GUARD
-  // ==========================================
   if (!currentUser) {
     return <Login onLoginSuccess={(username) => setCurrentUser(username)} />;
   }
@@ -299,13 +251,10 @@ export default function App() {
   const myOrders = userOrders[currentUser] || [];
   const cartTotal = cart.reduce((sum, item) => sum + parseFloat(item.price), 0);
 
-  // ==========================================
-  // 5. HELPER RENDERS
-  // ==========================================
   const renderCardsTable = () => (
     <div style={{ width: '100%', boxSizing: 'border-box' }}>
       <div style={{ marginBottom: '10px' }}>
-        <button
+        <button 
           onClick={addSelectedToCart}
           style={{
             backgroundColor: '#0c0c0e',
@@ -371,11 +320,11 @@ export default function App() {
                 return (
                   <tr key={card.id} style={{ borderBottom: '1px solid #1a1d24', backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.02)' : 'transparent' }}>
                     <td style={{ padding: '10px 6px' }}>
-                      <input
-                        type="checkbox"
+                      <input 
+                        type="checkbox" 
                         checked={isSelected}
                         onChange={() => toggleSelectCard(card.id)}
-                        style={{ accentColor: '#27272a', cursor: 'pointer' }}
+                        style={{ accentColor: '#27272a', cursor: 'pointer' }} 
                       />
                     </td>
                     <td style={{ padding: '10px 6px', color: '#ffffff', fontWeight: 'bold' }}>{card.bin}</td>
@@ -390,7 +339,7 @@ export default function App() {
                     <td style={{ padding: '10px 6px', color: '#38bdf8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.base}</td>
                     <td style={{ padding: '10px 6px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'inline-flex', gap: '4px', alignItems: 'center' }}>
-                        <button
+                        <button 
                           onClick={() => addToCart(card)}
                           style={{
                             backgroundColor: isInCart ? '#1a1d24' : '#0c0c0e',
@@ -405,7 +354,7 @@ export default function App() {
                         >
                           {isInCart ? 'Added ✓' : 'Add'}
                         </button>
-                        <button
+                        <button 
                           onClick={() => handleBuySingleCard(card)}
                           style={{
                             backgroundColor: 'transparent',
@@ -423,7 +372,7 @@ export default function App() {
                         </button>
 
                         {isOwner && (
-                          <button
+                          <button 
                             onClick={() => handleDeleteCard(card.id)}
                             title="Delete Card"
                             style={{
@@ -453,9 +402,6 @@ export default function App() {
     </div>
   );
 
-  // ==========================================
-  // 6. MAIN JSX RETURN
-  // ==========================================
   return (
     <div style={{
       display: 'flex',
@@ -491,31 +437,20 @@ export default function App() {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              onClick={() => setShowPasswordModal(true)}
-              style={{ backgroundColor: '#141416', border: '1px solid #27272a', color: '#eab308', padding: '8px 12px', fontSize: '11px', cursor: 'pointer', fontFamily: 'inherit' }}
-            >
-              🔑 Reset Password
-            </button>
-            <button
-              onClick={() => setCurrentUser(null)}
-              style={{ backgroundColor: '#141416', border: '1px solid #27272a', color: '#a1a1aa', padding: '8px 12px', fontSize: '11px', cursor: 'pointer', fontFamily: 'inherit' }}
-            >
-              log out
-            </button>
-          </div>
+          <button onClick={() => setCurrentUser(null)} style={{ backgroundColor: '#141416', border: '1px solid #27272a', color: '#a1a1aa', padding: '8px 16px', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>
+            log out
+          </button>
         </div>
 
         {/* Global Notice */}
         {notice.text && (
-          <div style={{
-            backgroundColor: notice.isError ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)',
-            border: `1px solid ${notice.isError ? '#ef4444' : '#22c55e'}`,
-            color: notice.isError ? '#ef4444' : '#22c55e',
-            padding: '10px 14px',
-            fontSize: '12px',
-            marginBottom: '20px'
+          <div style={{ 
+            backgroundColor: notice.isError ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)', 
+            border: `1px solid ${notice.isError ? '#ef4444' : '#22c55e'}`, 
+            color: notice.isError ? '#ef4444' : '#22c55e', 
+            padding: '10px 14px', 
+            fontSize: '12px', 
+            marginBottom: '20px' 
           }}>
             {notice.text}
           </div>
@@ -538,7 +473,7 @@ export default function App() {
               <h2 style={{ fontSize: '13px', fontWeight: 'bold', color: '#eab308', marginBottom: '14px', marginTop: 0 }}>
                 &gt; add live card (owner only)
               </h2>
-
+              
               <form onSubmit={handleAddCard} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
                 <div style={{ gridColumn: 'span 2' }}>
                   <label style={{ display: 'block', fontSize: '10px', color: '#eab308', marginBottom: '4px', fontWeight: 'bold' }}>
@@ -579,7 +514,7 @@ export default function App() {
                   <label style={{ display: 'block', fontSize: '10px', color: '#8e8e96', marginBottom: '4px' }}>ZIP</label>
                   <input type="text" placeholder="07866" value={newCard.zip} onChange={(e) => setNewCard({ ...newCard, zip: e.target.value })} style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #27272a', color: '#fff', padding: '8px', fontSize: '11px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
                 </div>
-
+                
                 <div style={{ gridColumn: 'span 2' }}>
                   <label style={{ display: 'block', fontSize: '10px', color: '#38bdf8', marginBottom: '4px', fontWeight: 'bold' }}>BASE (CUSTOM TEXT)</label>
                   <input type="text" placeholder="🎰 10% CHANCE OF $1000 🎰" value={newCard.base} onChange={(e) => setNewCard({ ...newCard, base: e.target.value })} style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #38bdf8', color: '#fff', padding: '8px', fontSize: '11px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
@@ -607,7 +542,7 @@ export default function App() {
                   <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} style={{ backgroundColor: '#0c0c0e', border: '1px solid #27272a', color: '#ffffff', padding: '8px 12px', fontSize: '11px', fontFamily: 'inherit', outline: 'none', minWidth: '160px' }}>
                     {registeredUsers.length === 0 && <option value="">No users registered</option>}
                     {registeredUsers.map((user) => (
-                      <option key={user} value={user}>{user} (Bal: ${(balances[user] || 0).toFixed(2)})</option>
+                      <option key={user} value={user}>{user} (Bal: ${ (balances[user] || 0).toFixed(2) })</option>
                     ))}
                   </select>
                 </div>
@@ -734,7 +669,7 @@ export default function App() {
             <span style={{ color: '#22c55e', fontWeight: 'bold', fontSize: '14px' }}>${cartTotal.toFixed(2)}</span>
           </div>
 
-          <button
+          <button 
             onClick={handleInitiateCheckout}
             style={{
               width: '100%',
@@ -808,7 +743,7 @@ export default function App() {
             boxShadow: '0 12px 48px rgba(0, 0, 0, 0.9)',
             boxSizing: 'border-box'
           }}>
-
+            
             {/* STAGE 1: CONFIRMATION */}
             {checkoutStage === 'review' && (
               <div>
@@ -996,117 +931,11 @@ export default function App() {
         </div>
       )}
 
-      {/* PASSWORD RESET MODAL OVERLAY */}
-      {showPasswordModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          backgroundColor: 'rgba(0, 0, 0, 0.85)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 10000
-        }}>
-          <div style={{
-            width: '100%',
-            maxWidth: '380px',
-            backgroundColor: '#141416',
-            border: '1px solid #27272a',
-            padding: '24px',
-            borderRadius: '4px',
-            boxSizing: 'border-box'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: '15px', fontWeight: 'bold', color: '#ffffff', margin: 0 }}>🔑 Change Password</h2>
-              <button
-                onClick={() => { setShowPasswordModal(false); setPasswordNotice({ text: '', isError: false }); }}
-                style={{ background: 'none', border: 'none', color: '#a1a1aa', fontSize: '16px', cursor: 'pointer' }}
-              >
-                ✕
-              </button>
-            </div>
-
-            {passwordNotice.text && (
-              <div style={{
-                backgroundColor: passwordNotice.isError ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
-                border: `1px solid ${passwordNotice.isError ? '#ef4444' : '#22c55e'}`,
-                color: passwordNotice.isError ? '#ef4444' : '#22c55e',
-                padding: '8px 12px',
-                fontSize: '11px',
-                marginBottom: '14px'
-              }}>
-                {passwordNotice.text}
-              </div>
-            )}
-
-            <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: '#a1a1aa', marginBottom: '4px' }}>Current Password</label>
-                <input
-                  type="password"
-                  value={oldPasswordInput}
-                  onChange={(e) => setOldPasswordInput(e.target.value)}
-                  required
-                  placeholder="Enter current password"
-                  style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #27272a', color: '#fff', padding: '8px 10px', fontSize: '12px', boxSizing: 'border-box', fontFamily: 'inherit' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: '#a1a1aa', marginBottom: '4px' }}>New Password</label>
-                <input
-                  type="password"
-                  value={newPasswordInput}
-                  onChange={(e) => setNewPasswordInput(e.target.value)}
-                  required
-                  placeholder="Enter new password"
-                  style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #27272a', color: '#fff', padding: '8px 10px', fontSize: '12px', boxSizing: 'border-box', fontFamily: 'inherit' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: '#a1a1aa', marginBottom: '4px' }}>Confirm New Password</label>
-                <input
-                  type="password"
-                  value={confirmPasswordInput}
-                  onChange={(e) => setConfirmPasswordInput(e.target.value)}
-                  required
-                  placeholder="Confirm new password"
-                  style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #27272a', color: '#fff', padding: '8px 10px', fontSize: '12px', boxSizing: 'border-box', fontFamily: 'inherit' }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowPasswordModal(false)}
-                  style={{ flex: 1, backgroundColor: '#0c0c0e', border: '1px solid #27272a', color: '#a1a1aa', padding: '10px', fontSize: '11px', cursor: 'pointer', fontFamily: 'inherit' }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  style={{ flex: 1, backgroundColor: '#22c55e', color: '#0c0c0e', border: 'none', padding: '10px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'inherit' }}
-                >
-                  Update Password
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }
 
-// ==========================================
-// 7. SUB-COMPONENTS
-// ==========================================
-
+// Telegram Tab Component Definition
 function TelegramTab() {
   return (
     <div style={{ maxWidth: '600px', width: '100%', boxSizing: 'border-box' }}>
@@ -1120,7 +949,7 @@ function TelegramTab() {
         <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#ffffff', marginTop: 0, marginBottom: '12px' }}>
           Join Our Community
         </h2>
-
+        
         <p style={{ fontSize: '13px', color: '#a1a1aa', marginBottom: '20px' }}>
           Join our Telegram channel to get the latest updates and announcements!
         </p>
@@ -1148,10 +977,11 @@ function TelegramTab() {
   );
 }
 
+// --- DEPOSIT TAB COMPONENT WITH MAINTENANCE OVERLAY ---
 function DepositTab({ currentUser }) {
   return (
     <div style={{ maxWidth: '600px', width: '100%', boxSizing: 'border-box', position: 'relative' }}>
-
+      
       {/* OVERLAY WITH CAUTION TAPE & X */}
       <div style={{
         position: 'absolute',
@@ -1172,7 +1002,7 @@ function DepositTab({ currentUser }) {
         overflow: 'hidden',
         minHeight: '340px'
       }}>
-
+        
         {/* TOP CAUTION TAPE */}
         <div style={{
           position: 'absolute',
@@ -1217,7 +1047,7 @@ function DepositTab({ currentUser }) {
         <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#ffffff', margin: '0 0 8px 0', textAlign: 'center' }}>
           Under Maintenance
         </h3>
-
+        
         <p style={{ fontSize: '12px', color: '#a1a1aa', textAlign: 'center', maxWidth: '360px', margin: '0 0 16px 0', lineHeight: '1.5' }}>
           For any deposits, please message{' '}
           <a
