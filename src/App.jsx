@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Login from './Login';
 import Sidebar from './Sidebar';
+import { supabase } from './supabase';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -43,26 +44,46 @@ export default function App() {
 
   const isOwner = currentUser === 'Admin';
 
-  // Initial Load
+// Initial Load: Query registered users & balances directly from Supabase
   useEffect(() => {
-    const storedBalances = JSON.parse(localStorage.getItem('userBalances') || '{}');
-    setBalances(storedBalances);
+    async function loadUsersFromSupabase() {
+      try {
+        const { data: usersData, error } = await supabase
+          .from('users')
+          .select('username, balance');
 
+        if (error) {
+          console.error('Error fetching users from Supabase:', error.message);
+        } else if (usersData) {
+          // Extract usernames list for the select dropdown
+          const userList = usersData.map((user) => user.username);
+          setRegisteredUsers(userList);
+          
+          if (userList.length > 0) {
+            setSelectedUser(userList[0]);
+          }
+
+          // Build balances object: { username: balance }
+          const initialBalances = {};
+          usersData.forEach((user) => {
+            initialBalances[user.username] = user.balance || 0;
+          });
+          setBalances(initialBalances);
+        }
+      } catch (err) {
+        console.error('Unexpected error loading user data:', err);
+      }
+    }
+
+    loadUsersFromSupabase();
+
+    // Retain local storage for non-auth state items
     const storedOrders = JSON.parse(localStorage.getItem('userOrders') || '{}');
     setUserOrders(storedOrders);
 
-    const accounts = JSON.parse(localStorage.getItem('users') || '{}');
-    const userList = Object.keys(accounts);
-    setRegisteredUsers(userList);
-    if (userList.length > 0) setSelectedUser(userList[0]);
-
     const savedCards = JSON.parse(localStorage.getItem('liveCards') || '[]');
     setLiveCards(savedCards);
-
-    setPurchases([
-      { id: 'TX-8921', user: 'buyer_john', item: 'Live Card Order', amount: '$1.00', date: '2026-08-01 02:14' },
-    ]);
-  }, []);
+  }, [currentUser]);
 
   // Handle adding a new Live Card (Owner only)
   const handleAddCard = (e) => {
@@ -230,18 +251,32 @@ export default function App() {
     }, 2000);
   };
 
-  const handleModifyBalance = (type) => {
+const handleModifyBalance = async (type) => {
     if (!selectedUser || !amountInput || isNaN(amountInput)) return;
 
     const numericAmount = parseFloat(amountInput);
     if (numericAmount <= 0) return;
 
     const currentBal = balances[selectedUser] || 0;
-    let updatedBal = type === 'add' ? currentBal + numericAmount : Math.max(0, currentBal - numericAmount);
+    const updatedBal = type === 'add' 
+      ? currentBal + numericAmount 
+      : Math.max(0, currentBal - numericAmount);
 
+    // 1. Save new balance directly to Supabase table
+    const { error } = await supabase
+      .from('users')
+      .update({ balance: updatedBal })
+      .eq('username', selectedUser);
+
+    if (error) {
+      setNotice({ text: `Failed to update balance: ${error.message}`, isError: true });
+      setTimeout(() => setNotice({ text: '', isError: false }), 4000);
+      return;
+    }
+
+    // 2. Update local state
     const updatedBalances = { ...balances, [selectedUser]: updatedBal };
     setBalances(updatedBalances);
-    localStorage.setItem('userBalances', JSON.stringify(updatedBalances));
 
     setNotice({
       text: `Successfully ${type === 'add' ? 'added to' : 'removed from'} ${selectedUser}'s balance!`,
