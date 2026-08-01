@@ -44,45 +44,62 @@ export default function App() {
 
   const isOwner = currentUser === 'Admin';
 
-// Initial Load: Query registered users & balances directly from Supabase
+// Initial Load: Fetch users, balances, and global inventory from Supabase
   useEffect(() => {
-    async function loadUsersFromSupabase() {
+    async function loadDataFromSupabase() {
       try {
-        const { data: usersData, error } = await supabase
+        // 1. Fetch Users & Balances from Supabase
+        const { data: usersData, error: userError } = await supabase
           .from('users')
           .select('username, balance');
 
-        if (error) {
-          console.error('Error fetching users from Supabase:', error.message);
+        if (userError) {
+          console.error('Error fetching users from Supabase:', userError.message);
         } else if (usersData) {
-          // Extract usernames list for the select dropdown
           const userList = usersData.map((user) => user.username);
           setRegisteredUsers(userList);
-          
+
           if (userList.length > 0) {
             setSelectedUser(userList[0]);
           }
 
-          // Build balances object: { username: balance }
           const initialBalances = {};
           usersData.forEach((user) => {
             initialBalances[user.username] = user.balance || 0;
           });
           setBalances(initialBalances);
         }
+
+        // 2. Fetch Global Inventory from Supabase
+        const { data: inventoryData, error: inventoryError } = await supabase
+          .from('inventory')
+          .select('*')
+          .order('id', { ascending: false });
+
+        if (inventoryError) {
+          console.error('Error fetching inventory:', inventoryError.message);
+        } else if (inventoryData) {
+          if (typeof setInventoryItems !== 'undefined') {
+            setInventoryItems(inventoryData);
+          } else if (typeof setLiveCards !== 'undefined') {
+            setLiveCards(inventoryData);
+          }
+        }
       } catch (err) {
-        console.error('Unexpected error loading user data:', err);
+        console.error('Unexpected error loading initial data:', err);
       }
     }
 
-    loadUsersFromSupabase();
+    // Function call matches definition
+    loadDataFromSupabase();
 
-    // Retain local storage for non-auth state items
-    const storedOrders = JSON.parse(localStorage.getItem('userOrders') || '{}');
-    setUserOrders(storedOrders);
-
-    const savedCards = JSON.parse(localStorage.getItem('liveCards') || '[]');
-    setLiveCards(savedCards);
+    // Load persistent local orders safely
+    try {
+      const storedOrders = JSON.parse(localStorage.getItem('userOrders') || '{}');
+      setUserOrders(storedOrders);
+    } catch (err) {
+      console.error('Error parsing stored orders:', err);
+    }
   }, [currentUser]);
 
   // Handle adding a new Live Card (Owner only)
