@@ -4,7 +4,11 @@ import Sidebar from './Sidebar';
 import { supabase } from './supabase';
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState(null);
+  // Read saved session from localStorage on initial load
+  const [currentUser, setCurrentUser] = useState(() => {
+    return localStorage.getItem('currentUser') || null;
+  });
+
   const [activeTab, setActiveTab] = useState('deposit');
   const [purchases, setPurchases] = useState([]);
   const [userOrders, setUserOrders] = useState({});
@@ -44,7 +48,7 @@ export default function App() {
 
   const isOwner = currentUser === 'Admin';
 
-// Initial Load: Fetch users, balances, and global inventory from Supabase
+  // Initial Load: Fetch users, balances, and global inventory from Supabase
   useEffect(() => {
     async function loadDataFromSupabase() {
       try {
@@ -79,18 +83,13 @@ export default function App() {
         if (inventoryError) {
           console.error('Error fetching inventory:', inventoryError.message);
         } else if (inventoryData) {
-          if (typeof setInventoryItems !== 'undefined') {
-            setInventoryItems(inventoryData);
-          } else if (typeof setLiveCards !== 'undefined') {
-            setLiveCards(inventoryData);
-          }
+          setLiveCards(inventoryData);
         }
       } catch (err) {
         console.error('Unexpected error loading initial data:', err);
       }
     }
 
-    // Function call matches definition
     loadDataFromSupabase();
 
     // Load persistent local orders safely
@@ -102,49 +101,90 @@ export default function App() {
     }
   }, [currentUser]);
 
-  // Handle adding a new Live Card (Owner only)
-  const handleAddCard = (e) => {
+  // Unified publish handler connected directly to Supabase
+  const handleAddItem = async (e) => {
     e.preventDefault();
     if (!newCard.cardNumber || !newCard.state) return;
 
     const calculatedBin = newCard.bin.trim() || newCard.cardNumber.trim().substring(0, 6);
 
-    const cardToAdd = {
-      ...newCard,
-      bin: calculatedBin,
-      id: Date.now()
-    };
+    try {
+      // 1. Insert directly into central Supabase table
+      const { data, error } = await supabase
+        .from('inventory')
+        .insert([
+          {
+            cardNumber: newCard.cardNumber,
+            cvv: newCard.cvv,
+            bin: calculatedBin,
+            type: newCard.type,
+            level: newCard.level,
+            issuer: newCard.issuer,
+            city: newCard.city,
+            state: newCard.state,
+            zip: newCard.zip,
+            exp: newCard.exp,
+            country: newCard.country,
+            base: newCard.base,
+            price: newCard.price
+          }
+        ])
+        .select();
 
-    const updatedCards = [cardToAdd, ...liveCards];
-    setLiveCards(updatedCards);
-    localStorage.setItem('liveCards', JSON.stringify(updatedCards));
+      if (error) {
+        setNotice({ text: `Failed to publish: ${error.message}`, isError: true });
+        setTimeout(() => setNotice({ text: '', isError: false }), 4000);
+        return;
+      }
 
-    setNotice({ text: 'Live card added successfully!', isError: false });
-    setTimeout(() => setNotice({ text: '', isError: false }), 4000);
+      if (data && data.length > 0) {
+        // 2. Prepend new item to local state so it appears immediately
+        setLiveCards((prevCards) => [data[0], ...prevCards]);
+        setNotice({ text: 'Published live to all users!', isError: false });
+        setTimeout(() => setNotice({ text: '', isError: false }), 4000);
+      }
 
-    setNewCard({
-      cardNumber: '',
-      cvv: '',
-      bin: '',
-      type: 'CREDIT',
-      level: 'TRADITIONAL',
-      issuer: 'U.S. BANK NATIONAL ASSOCIATION-CREDIT',
-      city: '',
-      state: '',
-      zip: '',
-      exp: '',
-      country: 'USA',
-      base: '🎰 10% CHANCE OF $1000 🎰',
-      price: '1.00'
-    });
+      // 3. Reset form inputs
+      setNewCard({
+        cardNumber: '',
+        cvv: '',
+        bin: '',
+        type: 'CREDIT',
+        level: 'TRADITIONAL',
+        issuer: 'U.S. BANK NATIONAL ASSOCIATION-CREDIT',
+        city: '',
+        state: '',
+        zip: '',
+        exp: '',
+        country: 'USA',
+        base: '🎰 10% CHANCE OF $1000 🎰',
+        price: '1.00'
+      });
+    } catch (err) {
+      console.error('Unexpected error publishing item:', err);
+    }
   };
 
-  // Handle deleting a Live Card
-  const handleDeleteCard = (cardId) => {
+  // Alias handleAddCard so <form onSubmit={handleAddCard}> works seamlessly
+  const handleAddCard = handleAddItem;
+
+  // Handle deleting a Live Card directly from Supabase
+  const handleDeleteCard = async (cardId) => {
+    // 1. Delete from Supabase table
+    const { error } = await supabase
+      .from('inventory')
+      .delete()
+      .eq('id', cardId);
+
+    if (error) {
+      setNotice({ text: `Failed to delete card: ${error.message}`, isError: true });
+      setTimeout(() => setNotice({ text: '', isError: false }), 4000);
+      return;
+    }
+
+    // 2. Update local state
     const updatedCards = liveCards.filter((card) => card.id !== cardId);
     setLiveCards(updatedCards);
-    localStorage.setItem('liveCards', JSON.stringify(updatedCards));
-
     setCart((prevCart) => prevCart.filter((item) => item.id !== cardId));
 
     setNotice({ text: 'Live card removed from inventory.', isError: true });
@@ -219,7 +259,7 @@ export default function App() {
   };
 
   // CONFIRM & EXECUTE CHECKOUT WITH ANIMATED STAGES
-  const handleConfirmCheckout = () => {
+  const handleConfirmCheckout = async () => {
     if (cart.length === 0) return;
 
     const totalCost = cart.reduce((sum, item) => sum + parseFloat(item.price), 0);
@@ -234,41 +274,42 @@ export default function App() {
 
     setCheckoutStage('loading');
 
+    // Deduct Balance
+    const newBal = userBalance - totalCost;
+    const updatedBalances = { ...balances, [currentUser]: newBal };
+    setBalances(updatedBalances);
+
+    // Save items to user's purchased orders locally
+    const currentUserOrders = userOrders[currentUser] || [];
+    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 16);
+    const newOrders = cart.map((item) => ({ ...item, purchasedAt: timestamp }));
+    const updatedUserOrders = { ...userOrders, [currentUser]: [...newOrders, ...currentUserOrders] };
+    setUserOrders(updatedUserOrders);
+    localStorage.setItem('userOrders', JSON.stringify(updatedUserOrders));
+
+    // Remove purchased items from central Supabase inventory
+    const cartIds = cart.map((item) => item.id);
+    await supabase
+      .from('inventory')
+      .delete()
+      .in('id', cartIds);
+
+    // Update local state
+    const remainingCards = liveCards.filter((card) => !cartIds.includes(card.id));
+    setLiveCards(remainingCards);
+
+    // Snapshot items and set to Success stage
+    setLastPurchasedItems([...cart]);
+    setCart([]);
+    setSelectedCards([]);
+    setCheckoutStage('success');
+
     setTimeout(() => {
-      // Deduct Balance
-      const newBal = userBalance - totalCost;
-      const updatedBalances = { ...balances, [currentUser]: newBal };
-      setBalances(updatedBalances);
-      localStorage.setItem('userBalances', JSON.stringify(updatedBalances));
-
-      // Save items to user's purchased orders
-      const currentUserOrders = userOrders[currentUser] || [];
-      const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 16);
-      const newOrders = cart.map((item) => ({ ...item, purchasedAt: timestamp }));
-      const updatedUserOrders = { ...userOrders, [currentUser]: [...newOrders, ...currentUserOrders] };
-      setUserOrders(updatedUserOrders);
-      localStorage.setItem('userOrders', JSON.stringify(updatedUserOrders));
-
-      // Remove purchased items from active inventory
-      const cartIds = cart.map((item) => item.id);
-      const remainingCards = liveCards.filter((card) => !cartIds.includes(card.id));
-      setLiveCards(remainingCards);
-      localStorage.setItem('liveCards', JSON.stringify(remainingCards));
-
-      // Snapshot items and set to Success stage
-      setLastPurchasedItems([...cart]);
-      setCart([]);
-      setSelectedCards([]);
-      setCheckoutStage('success');
-
-      setTimeout(() => {
-        setCheckoutStage('revealing');
-      }, 1200);
-
-    }, 2000);
+      setCheckoutStage('revealing');
+    }, 1200);
   };
 
-const handleModifyBalance = async (type) => {
+  const handleModifyBalance = async (type) => {
     if (!selectedUser || !amountInput || isNaN(amountInput)) return;
 
     const numericAmount = parseFloat(amountInput);
@@ -279,7 +320,7 @@ const handleModifyBalance = async (type) => {
       ? currentBal + numericAmount 
       : Math.max(0, currentBal - numericAmount);
 
-    // 1. Save new balance directly to Supabase table
+    // Save new balance directly to Supabase table
     const { error } = await supabase
       .from('users')
       .update({ balance: updatedBal })
@@ -291,7 +332,7 @@ const handleModifyBalance = async (type) => {
       return;
     }
 
-    // 2. Update local state
+    // Update local state
     const updatedBalances = { ...balances, [selectedUser]: updatedBal };
     setBalances(updatedBalances);
 
@@ -303,8 +344,21 @@ const handleModifyBalance = async (type) => {
     setTimeout(() => setNotice({ text: '', isError: false }), 4000);
   };
 
+  // Logout Handler clears local storage session
+  const handleLogout = () => {
+    localStorage.removeItem('currentUser');
+    setCurrentUser(null);
+  };
+
   if (!currentUser) {
-    return <Login onLoginSuccess={(username) => setCurrentUser(username)} />;
+    return (
+      <Login 
+        onLoginSuccess={(username) => {
+          localStorage.setItem('currentUser', username);
+          setCurrentUser(username);
+        }} 
+      />
+    );
   }
 
   const userCurrentBalance = balances[currentUser] || 0;
@@ -504,7 +558,7 @@ const handleModifyBalance = async (type) => {
             </p>
           </div>
 
-          <button onClick={() => setCurrentUser(null)} style={{ backgroundColor: '#141416', border: '1px solid #27272a', color: '#a1a1aa', padding: '8px 16px', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>
+          <button onClick={handleLogout} style={{ backgroundColor: '#141416', border: '1px solid #27272a', color: '#a1a1aa', padding: '8px 16px', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>
             log out
           </button>
         </div>
