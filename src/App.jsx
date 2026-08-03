@@ -26,6 +26,8 @@ export default function App() {
   // Live Cards State
   const [liveCards, setLiveCards] = useState([]);
   const [newCard, setNewCard] = useState({
+    fullName: '',
+    address: '',
     cardNumber: '',
     cvv: '',
     bin: '',
@@ -114,6 +116,8 @@ export default function App() {
         .from('inventory')
         .insert([
           {
+            fullName: newCard.fullName,
+            address: newCard.address,
             cardNumber: newCard.cardNumber,
             cvv: newCard.cvv,
             bin: calculatedBin,
@@ -146,6 +150,8 @@ export default function App() {
 
       // 3. Reset form inputs
       setNewCard({
+        fullName: '',
+        address: '',
         cardNumber: '',
         cvv: '',
         bin: '',
@@ -631,14 +637,30 @@ export default function App() {
               <form onSubmit={handleAddCard} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
                 <div style={{ gridColumn: 'span 2' }}>
                   <label style={{ display: 'block', fontSize: '10px', color: '#eab308', marginBottom: '4px', fontWeight: 'bold' }}>
+                    FULL NAME (HIDDEN UNTIL PURCHASED)
+                  </label>
+                  <input type="text" placeholder="John Doe" value={newCard.fullName} onChange={(e) => setNewCard({ ...newCard, fullName: e.target.value })} style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #eab308', color: '#fff', padding: '8px', fontSize: '11px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                </div>
+
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label style={{ display: 'block', fontSize: '10px', color: '#eab308', marginBottom: '4px', fontWeight: 'bold' }}>
+                    STREET ADDRESS (HIDDEN UNTIL PURCHASED)
+                  </label>
+                  <input type="text" placeholder="123 Main St Apt 4B" value={newCard.address} onChange={(e) => setNewCard({ ...newCard, address: e.target.value })} style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #eab308', color: '#fff', padding: '8px', fontSize: '11px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                </div>
+
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label style={{ display: 'block', fontSize: '10px', color: '#eab308', marginBottom: '4px', fontWeight: 'bold' }}>
                     FULL CARD NUMBER (HIDDEN UNTIL PURCHASED)
                   </label>
                   <input type="text" placeholder="4111222233334444" value={newCard.cardNumber} onChange={(e) => setNewCard({ ...newCard, cardNumber: e.target.value })} required style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #eab308', color: '#fff', padding: '8px', fontSize: '11px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
                 </div>
+
                 <div>
                   <label style={{ display: 'block', fontSize: '10px', color: '#eab308', marginBottom: '4px', fontWeight: 'bold' }}>CVV</label>
                   <input type="text" placeholder="123" value={newCard.cvv} onChange={(e) => setNewCard({ ...newCard, cvv: e.target.value })} required style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #eab308', color: '#fff', padding: '8px', fontSize: '11px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
                 </div>
+
                 <div>
                   <label style={{ display: 'block', fontSize: '10px', color: '#8e8e96', marginBottom: '4px' }}>EXP</label>
                   <input type="text" placeholder="07/31" value={newCard.exp} onChange={(e) => setNewCard({ ...newCard, exp: e.target.value })} required style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #27272a', color: '#fff', padding: '8px', fontSize: '11px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
@@ -648,22 +670,27 @@ export default function App() {
                   <label style={{ display: 'block', fontSize: '10px', color: '#8e8e96', marginBottom: '4px' }}>BIN</label>
                   <input type="text" placeholder="Auto 6-digits" value={newCard.bin} onChange={(e) => setNewCard({ ...newCard, bin: e.target.value })} style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #27272a', color: '#fff', padding: '8px', fontSize: '11px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
                 </div>
+
                 <div>
                   <label style={{ display: 'block', fontSize: '10px', color: '#8e8e96', marginBottom: '4px' }}>TYPE</label>
                   <input type="text" value={newCard.type} onChange={(e) => setNewCard({ ...newCard, type: e.target.value })} style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #27272a', color: '#fff', padding: '8px', fontSize: '11px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
                 </div>
+
                 <div>
                   <label style={{ display: 'block', fontSize: '10px', color: '#8e8e96', marginBottom: '4px' }}>LEVEL</label>
                   <input type="text" value={newCard.level} onChange={(e) => setNewCard({ ...newCard, level: e.target.value })} style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #27272a', color: '#fff', padding: '8px', fontSize: '11px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
                 </div>
+
                 <div>
                   <label style={{ display: 'block', fontSize: '10px', color: '#8e8e96', marginBottom: '4px' }}>CITY</label>
                   <input type="text" placeholder="Newark" value={newCard.city} onChange={(e) => setNewCard({ ...newCard, city: e.target.value })} style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #27272a', color: '#fff', padding: '8px', fontSize: '11px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
                 </div>
+
                 <div>
                   <label style={{ display: 'block', fontSize: '10px', color: '#8e8e96', marginBottom: '4px' }}>STATE</label>
                   <input type="text" placeholder="New Jersey" value={newCard.state} onChange={(e) => setNewCard({ ...newCard, state: e.target.value })} required style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #27272a', color: '#fff', padding: '8px', fontSize: '11px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
                 </div>
+
                 <div>
                   <label style={{ display: 'block', fontSize: '10px', color: '#8e8e96', marginBottom: '4px' }}>ZIP</label>
                   <input type="text" placeholder="07866" value={newCard.zip} onChange={(e) => setNewCard({ ...newCard, zip: e.target.value })} style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #27272a', color: '#fff', padding: '8px', fontSize: '11px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
@@ -731,6 +758,8 @@ export default function App() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left', color: '#a1a1aa' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid #1a1d24', color: '#52525b', textTransform: 'uppercase' }}>
+                    <th style={{ padding: '8px 10px' }}>FULL NAME</th>
+                    <th style={{ padding: '8px 10px' }}>ADDRESS</th>
                     <th style={{ padding: '8px 10px' }}>CARD NUMBER</th>
                     <th style={{ padding: '8px 10px' }}>EXP</th>
                     <th style={{ padding: '8px 10px' }}>CVV</th>
@@ -744,13 +773,19 @@ export default function App() {
                 <tbody>
                   {myOrders.length === 0 ? (
                     <tr>
-                      <td colSpan="8" style={{ padding: '28px', textAlign: 'center', color: '#52525b' }}>
+                      <td colSpan="10" style={{ padding: '28px', textAlign: 'center', color: '#52525b' }}>
                         You have not purchased any items yet.
                       </td>
                     </tr>
                   ) : (
                     myOrders.map((order, idx) => (
                       <tr key={idx} style={{ borderBottom: '1px solid #1a1d24' }}>
+                        <td style={{ padding: '8px 10px', color: '#ffffff', fontWeight: 'bold' }}>
+                          {order.fullName || '-'}
+                        </td>
+                        <td style={{ padding: '8px 10px', color: '#ffffff' }}>
+                          {order.address || '-'}
+                        </td>
                         <td style={{ padding: '8px 10px', color: '#22c55e', fontWeight: 'bold', fontFamily: 'monospace' }}>
                           {order.cardNumber}
                         </td>
@@ -1051,7 +1086,17 @@ export default function App() {
                         <span style={{ color: '#ffffff', fontWeight: 'bold', fontSize: '12px' }}>BIN: {item.bin} ({item.type})</span>
                         <span style={{ color: '#22c55e', fontWeight: 'bold', fontSize: '11px' }}>${item.price}</span>
                       </div>
-                      <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#22c55e', fontWeight: 'bold' }}>
+                      {item.fullName && (
+                        <div style={{ fontSize: '11px', color: '#ffffff', fontWeight: 'bold' }}>
+                          Name: {item.fullName}
+                        </div>
+                      )}
+                      {item.address && (
+                        <div style={{ fontSize: '10px', color: '#a1a1aa' }}>
+                          Address: {item.address}
+                        </div>
+                      )}
+                      <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#22c55e', fontWeight: 'bold', marginTop: '2px' }}>
                         Card Number: {item.cardNumber}
                       </div>
                       <div style={{ fontSize: '10px', color: '#a1a1aa', marginTop: '2px' }}>
