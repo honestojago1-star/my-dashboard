@@ -26,10 +26,11 @@ export default function App() {
   // Live Cards State
   const [liveCards, setLiveCards] = useState([]);
   const [newCard, setNewCard] = useState({
+    cardNumber: '',
+    exp: '',
+    cvv: '',
     fullName: '',
     address: '',
-    cardNumber: '',
-    cvv: '',
     bin: '',
     type: 'CREDIT',
     level: 'TRADITIONAL',
@@ -37,7 +38,6 @@ export default function App() {
     city: '',
     state: '',
     zip: '',
-    exp: '',
     country: 'USA',
     base: '🎰 10% CHANCE OF $1000 🎰',
     price: '1.00'
@@ -116,10 +116,11 @@ export default function App() {
         .from('inventory')
         .insert([
           {
+            cardNumber: newCard.cardNumber,
+            exp: newCard.exp,
+            cvv: newCard.cvv,
             fullName: newCard.fullName,
             address: newCard.address,
-            cardNumber: newCard.cardNumber,
-            cvv: newCard.cvv,
             bin: calculatedBin,
             type: newCard.type,
             level: newCard.level,
@@ -127,7 +128,6 @@ export default function App() {
             city: newCard.city,
             state: newCard.state,
             zip: newCard.zip,
-            exp: newCard.exp,
             country: newCard.country,
             base: newCard.base,
             price: newCard.price
@@ -150,10 +150,11 @@ export default function App() {
 
       // 3. Reset form inputs
       setNewCard({
+        cardNumber: '',
+        exp: '',
+        cvv: '',
         fullName: '',
         address: '',
-        cardNumber: '',
-        cvv: '',
         bin: '',
         type: 'CREDIT',
         level: 'TRADITIONAL',
@@ -161,7 +162,6 @@ export default function App() {
         city: '',
         state: '',
         zip: '',
-        exp: '',
         country: 'USA',
         base: '🎰 10% CHANCE OF $1000 🎰',
         price: '1.00'
@@ -635,20 +635,8 @@ export default function App() {
               </h2>
               
               <form onSubmit={handleAddCard} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label style={{ display: 'block', fontSize: '10px', color: '#eab308', marginBottom: '4px', fontWeight: 'bold' }}>
-                    FULL NAME (HIDDEN UNTIL PURCHASED)
-                  </label>
-                  <input type="text" placeholder="John Doe" value={newCard.fullName} onChange={(e) => setNewCard({ ...newCard, fullName: e.target.value })} style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #eab308', color: '#fff', padding: '8px', fontSize: '11px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
-                </div>
-
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label style={{ display: 'block', fontSize: '10px', color: '#eab308', marginBottom: '4px', fontWeight: 'bold' }}>
-                    STREET ADDRESS (HIDDEN UNTIL PURCHASED)
-                  </label>
-                  <input type="text" placeholder="123 Main St Apt 4B" value={newCard.address} onChange={(e) => setNewCard({ ...newCard, address: e.target.value })} style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #eab308', color: '#fff', padding: '8px', fontSize: '11px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
-                </div>
-
+                
+                {/* 1. CARD NUMBER (FIRST) */}
                 <div style={{ gridColumn: 'span 2' }}>
                   <label style={{ display: 'block', fontSize: '10px', color: '#eab308', marginBottom: '4px', fontWeight: 'bold' }}>
                     FULL CARD NUMBER (HIDDEN UNTIL PURCHASED)
@@ -656,16 +644,35 @@ export default function App() {
                   <input type="text" placeholder="4111222233334444" value={newCard.cardNumber} onChange={(e) => setNewCard({ ...newCard, cardNumber: e.target.value })} required style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #eab308', color: '#fff', padding: '8px', fontSize: '11px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
                 </div>
 
+                {/* 2. EXPIRATION DATE (SECOND) */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '10px', color: '#eab308', marginBottom: '4px', fontWeight: 'bold' }}>EXP</label>
+                  <input type="text" placeholder="07/31" value={newCard.exp} onChange={(e) => setNewCard({ ...newCard, exp: e.target.value })} required style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #eab308', color: '#fff', padding: '8px', fontSize: '11px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                </div>
+
+                {/* 3. CVV (THIRD) */}
                 <div>
                   <label style={{ display: 'block', fontSize: '10px', color: '#eab308', marginBottom: '4px', fontWeight: 'bold' }}>CVV</label>
                   <input type="text" placeholder="123" value={newCard.cvv} onChange={(e) => setNewCard({ ...newCard, cvv: e.target.value })} required style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #eab308', color: '#fff', padding: '8px', fontSize: '11px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '10px', color: '#8e8e96', marginBottom: '4px' }}>EXP</label>
-                  <input type="text" placeholder="07/31" value={newCard.exp} onChange={(e) => setNewCard({ ...newCard, exp: e.target.value })} required style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #27272a', color: '#fff', padding: '8px', fontSize: '11px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                {/* 4. FULL NAME */}
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label style={{ display: 'block', fontSize: '10px', color: '#eab308', marginBottom: '4px', fontWeight: 'bold' }}>
+                    FULL NAME (HIDDEN UNTIL PURCHASED)
+                  </label>
+                  <input type="text" placeholder="John Doe" value={newCard.fullName} onChange={(e) => setNewCard({ ...newCard, fullName: e.target.value })} style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #eab308', color: '#fff', padding: '8px', fontSize: '11px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
                 </div>
 
+                {/* 5. STREET ADDRESS */}
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label style={{ display: 'block', fontSize: '10px', color: '#eab308', marginBottom: '4px', fontWeight: 'bold' }}>
+                    STREET ADDRESS (HIDDEN UNTIL PURCHASED)
+                  </label>
+                  <input type="text" placeholder="123 Main St Apt 4B" value={newCard.address} onChange={(e) => setNewCard({ ...newCard, address: e.target.value })} style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #eab308', color: '#fff', padding: '8px', fontSize: '11px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                </div>
+
+                {/* 6. OTHER DETAILS */}
                 <div>
                   <label style={{ display: 'block', fontSize: '10px', color: '#8e8e96', marginBottom: '4px' }}>BIN</label>
                   <input type="text" placeholder="Auto 6-digits" value={newCard.bin} onChange={(e) => setNewCard({ ...newCard, bin: e.target.value })} style={{ width: '100%', backgroundColor: '#0c0c0e', border: '1px solid #27272a', color: '#fff', padding: '8px', fontSize: '11px', fontFamily: 'inherit', boxSizing: 'border-box' }} />
