@@ -258,55 +258,88 @@ export default function App() {
     handleInitiateCheckout();
   };
 
-  // CONFIRM & EXECUTE CHECKOUT WITH ANIMATED STAGES
+  // CONFIRM & EXECUTE CHECKOUT WITH SUPABASE PERSISTENCE & DIAGNOSTIC LOGS
   const handleConfirmCheckout = async () => {
     if (cart.length === 0) return;
 
-    const totalCost = cart.reduce((sum, item) => sum + parseFloat(item.price), 0);
-    const userBalance = balances[currentUser] || 0;
+    // 1. Calculate totals safely as numbers
+    const totalCost = cart.reduce((sum, item) => sum + Number(item.price), 0);
+    const userBalance = Number(balances[currentUser]) || 0;
 
+    // Guard clause for insufficient balance
     if (userBalance < totalCost) {
-      setNotice({ text: `Insufficient balance ($${userBalance.toFixed(2)}). Total cost is $${totalCost.toFixed(2)}.`, isError: true });
+      setNotice({
+        text: `Insufficient balance ($${userBalance.toFixed(2)}). Total cost is $${totalCost.toFixed(2)}.`,
+        isError: true,
+      });
       setShowCheckoutModal(false);
-      setTimeout(() => setNotice({ text: '', isError: false }), 4000);
       return;
     }
 
     setCheckoutStage('loading');
 
-    // Deduct Balance
-    const newBal = userBalance - totalCost;
-    const updatedBalances = { ...balances, [currentUser]: newBal };
-    setBalances(updatedBalances);
+    try {
+      const newBal = Number((userBalance - totalCost).toFixed(2));
 
-    // Save items to user's purchased orders locally
-    const currentUserOrders = userOrders[currentUser] || [];
-    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 16);
-    const newOrders = cart.map((item) => ({ ...item, purchasedAt: timestamp }));
-    const updatedUserOrders = { ...userOrders, [currentUser]: [...newOrders, ...currentUserOrders] };
-    setUserOrders(updatedUserOrders);
-    localStorage.setItem('userOrders', JSON.stringify(updatedUserOrders));
+      // 2. Update user's balance in Supabase (case-insensitive username match)
+      const { data: updatedUserData, error: balanceError } = await supabase
+        .from('users')
+        .update({ balance: newBal })
+        .ilike('username', currentUser)
+        .select();
 
-    // Remove purchased items from central Supabase inventory
-    const cartIds = cart.map((item) => item.id);
-    await supabase
-      .from('inventory')
-      .delete()
-      .in('id', cartIds);
+      if (balanceError) {
+        throw new Error(`Failed to update balance: ${balanceError.message}`);
+      }
 
-    // Update local state
-    const remainingCards = liveCards.filter((card) => !cartIds.includes(card.id));
-    setLiveCards(remainingCards);
+      if (!updatedUserData || updatedUserData.length === 0) {
+        throw new Error(`User account "${currentUser}" not found in database.`);
+      }
 
-    // Snapshot items and set to Success stage
-    setLastPurchasedItems([...cart]);
-    setCart([]);
-    setSelectedCards([]);
-    setCheckoutStage('success');
+      // 3. Remove purchased items from the inventory table
+      const cartIds = cart.map((item) => item.id);
+      const { error: deleteError } = await supabase
+        .from('inventory')
+        .delete()
+        .in('id', cartIds);
 
-    setTimeout(() => {
-      setCheckoutStage('revealing');
-    }, 1200);
+      if (deleteError) {
+        throw new Error(`Failed to update inventory: ${deleteError.message}`);
+      }
+
+      // 4. Record order history locally and persist to localStorage
+      const timestamp = new Date().toLocaleString();
+      const formattedOrders = cart.map((item) => ({
+        ...item,
+        purchasedAt: timestamp
+      }));
+
+      const existingOrders = userOrders[currentUser] || [];
+      const updatedUserOrders = {
+        ...userOrders,
+        [currentUser]: [...formattedOrders, ...existingOrders]
+      };
+
+      setUserOrders(updatedUserOrders);
+      localStorage.setItem('userOrders', JSON.stringify(updatedUserOrders));
+
+      // 5. Update local React states
+      setBalances((prev) => ({ ...prev, [currentUser]: newBal }));
+      setLiveCards((prev) => prev.filter((card) => !cartIds.includes(card.id)));
+      setLastPurchasedItems(cart);
+      setCart([]);
+
+      // 6. Progress UI stage to success, then reveal screen
+      setCheckoutStage('success');
+      setTimeout(() => {
+        setCheckoutStage('revealing');
+      }, 1200);
+
+    } catch (err) {
+      console.error('Checkout error:', err);
+      setNotice({ text: err.message, isError: true });
+      setShowCheckoutModal(false);
+    }
   };
 
   const handleModifyBalance = async (type) => {
@@ -324,7 +357,7 @@ export default function App() {
     const { error } = await supabase
       .from('users')
       .update({ balance: updatedBal })
-      .eq('username', selectedUser);
+      .ilike('username', selectedUser);
 
     if (error) {
       setNotice({ text: `Failed to update balance: ${error.message}`, isError: true });
